@@ -6,8 +6,14 @@ import (
 
 	"github.com/gorilla/mux"
 
+	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
+
+var db, _ = gorm.Open("mysql", "root:root@/todolist?charset=utf8&parseTime=True&loc=Local")
 
 // Healthz is health checking
 func Healthz(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +28,8 @@ func init() {
 }
 
 func main() {
+	defer db.Close()
+
 	log.Info("Starting TodoList API Server")
 	router := mux.NewRouter()
 	router.HandleFunc("/healthz", Healthz).Methods("GET")
