@@ -15,6 +15,13 @@ import (
 
 var db, _ = gorm.Open("mysql", "root:root@/todolist?charset=utf8&parseTime=True&loc=Local")
 
+// TodoItemModel is model for TodoItem
+type TodoItemModel struct {
+	ID          int `gorm:"primary_key"`
+	Description string
+	Completed   bool
+}
+
 // Healthz is health checking
 func Healthz(w http.ResponseWriter, r *http.Request) {
 	log.Info("API Health is OK")
@@ -29,6 +36,9 @@ func init() {
 
 func main() {
 	defer db.Close()
+
+	db.Debug().DropTableIfExists(&TodoItemModel{})
+	db.Debug().AutoMigrate(&TodoItemModel{})
 
 	log.Info("Starting TodoList API Server")
 	router := mux.NewRouter()
