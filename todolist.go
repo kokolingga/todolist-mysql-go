@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -22,7 +23,7 @@ type TodoItemModel struct {
 	Completed   bool
 }
 
-// Healthz is health checking
+// Healthz : health checking
 func Healthz(w http.ResponseWriter, r *http.Request) {
 	log.Info("API Health is OK")
 	w.Header().Set("Content-Type", "application/json")
@@ -34,6 +35,17 @@ func init() {
 	log.SetReportCaller(true)
 }
 
+// CreateItem : create a new todo item
+func CreateItem(w http.ResponseWriter, r *http.Request) {
+	description := r.FormValue("description")
+	log.WithFields(log.Fields{"description": description}).Info("Add new TodoItem. Saving to database.")
+	todo := &TodoItemModel{Description: description, Completed: false}
+	db.Create(&todo)
+	result := db.Last(&todo)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result.Value)
+}
+
 func main() {
 	defer db.Close()
 
@@ -43,5 +55,6 @@ func main() {
 	log.Info("Starting TodoList API Server")
 	router := mux.NewRouter()
 	router.HandleFunc("/healthz", Healthz).Methods("GET")
+	router.HandleFunc("/todo", CreateItem).Methods("POST")
 	http.ListenAndServe(":8000", router)
 }
