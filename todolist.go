@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -46,6 +47,44 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result.Value)
 }
 
+// GetItemByID : get existing todo item by id
+func GetItemByID(ID int) bool {
+	todo := &TodoItemModel{}
+	result := db.First(&todo, ID)
+
+	if result.Error != nil {
+		log.Warn("TodoItem not found in database")
+		return false
+	}
+	return true
+}
+
+// UpdateItem : update existing todo item
+func UpdateItem(w http.ResponseWriter, r *http.Request) {
+	// get URL parameter from mux
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	// test if the TodoItem exist in DB
+	err := GetItemByID(id)
+
+	if err == false {
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"updated": false, "error": "Record Not Found"}`)
+	} else {
+		completed, _ := strconv.ParseBool(r.FormValue("completed"))
+		log.WithFields(log.Fields{"Id": id, "Completed": completed}).Info("Updating TodoItem")
+
+		todo := &TodoItemModel{}
+		db.First(&todo, id)
+		todo.Completed = completed
+		db.Save(&todo)
+
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"updated": true}`)
+	}
+}
+
 func main() {
 	defer db.Close()
 
@@ -56,5 +95,6 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/healthz", Healthz).Methods("GET")
 	router.HandleFunc("/todo", CreateItem).Methods("POST")
+	router.HandleFunc("/todo/{id}", UpdateItem).Methods("POST")
 	http.ListenAndServe(":8000", router)
 }
