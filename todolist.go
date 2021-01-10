@@ -85,6 +85,52 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteItem : delete existing todo item
+func DeleteItem(w http.ResponseWriter, r *http.Request) {
+	// get URL parameter from mux
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	// test if the TodoItem exist in DB
+	err := GetItemByID(id)
+
+	if err == false {
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"deleted": false, "error": "Record Not Found"}`)
+	} else {
+		log.WithFields(log.Fields{"Id": id}).Info("Deleting TodoItem")
+		todo := &TodoItemModel{}
+		db.First(&todo, id)
+		db.Delete(&todo)
+
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"deleted": true}`)
+	}
+}
+
+// GetTodoItems : get todo item based on completed status
+func GetTodoItems(completed bool) interface{} {
+	var todos []TodoItemModel
+	TodoItems := db.Where("completed = ?", completed).Find(&todos).Value
+	return TodoItems
+}
+
+// GetCompletedItems : get completed todo items
+func GetCompletedItems(w http.ResponseWriter, r *http.Request) {
+	log.Info("Get completed TodoItems")
+	completedTodoItems := GetTodoItems(true)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(completedTodoItems)
+}
+
+// GetIncompleteItems : get completed todo items
+func GetIncompleteItems(w http.ResponseWriter, r *http.Request) {
+	log.Info("Get incomplete TodoItems")
+	incompletedTodoItems := GetTodoItems(false)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(incompletedTodoItems)
+}
+
 func main() {
 	defer db.Close()
 
@@ -94,7 +140,10 @@ func main() {
 	log.Info("Starting TodoList API Server")
 	router := mux.NewRouter()
 	router.HandleFunc("/healthz", Healthz).Methods("GET")
+	router.HandleFunc("/todo-completed", GetCompletedItems).Methods("GET")
+	router.HandleFunc("/todo-incomplete", GetIncompleteItems).Methods("GET")
 	router.HandleFunc("/todo", CreateItem).Methods("POST")
 	router.HandleFunc("/todo/{id}", UpdateItem).Methods("POST")
+	router.HandleFunc("/todo/{id}", DeleteItem).Methods("DELETE")
 	http.ListenAndServe(":8000", router)
 }
