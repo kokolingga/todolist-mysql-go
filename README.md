@@ -10,15 +10,10 @@ Based on Mohamad Fadhil's blog [post](https://fadhil-blog.dev/blog/golang-todoli
 
 ## Setup
 * clone into your chosen folder (eq : `~/works/`)
-* $ go get -u github.com/gorilla/mux
-* $ go get -u github.com/sirupsen/logrus
-* $ go get -u github.com/jinzhu/gorm
-* $ go get -u github.com/go-sql-driver/mysql
-* $ go get -u github.com/jinzhu/gorm/dialects/mysql
 
 ## Setup and enter to MySQL bash
 * docker run -d -p 3306:3306 --name mysql -e MYSQL_ROOT_PASSWORD=root mysql
-* docker exec -it mysql mysql -u root -p root -e 'CREATE DATABASE todolist'
+* docker exec -it mysql mysql -u root -p -e 'CREATE DATABASE todolist'
 * docker exec -it mysql bash
 * mysql -h localhost -u root -p
 
